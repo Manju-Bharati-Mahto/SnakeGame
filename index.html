@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e879f9, #fce7f3, #dbeafe);
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .title h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #9333ea, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .title p {
+            color: #6b7280;
+        }
+
+        .game-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .game-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .game-board {
+            text-align: center;
+        }
+
+        .board-container {
+            position: relative;
+            display: inline-block;
+            border: 4px solid white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .board {
+            display: block;
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        .board-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(4px);
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .board-overlay.hidden {
+            display: none;
+        }
+
+        .game-over-overlay {
+            background: rgba(239, 68, 68, 0.2);
+            color: #991b1b;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .stats h3,
+        .controls h3,
+        .settings h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .stat-label {
+            color: #6b7280;
+        }
+
+        .stat-value {
+            font-weight: bold;
+        }
+
+        .score {
+            font-size: 1.5rem;
+            color: #16a34a;
+        }
+
+        .high-score {
+            font-size: 1.25rem;
+            color: #9333ea;
+        }
+
+        .length {
+            font-size: 1.125rem;
+            color: #2563eb;
+        }
+
+        .button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+        }
+
+        .button-primary {
+            background: linear-gradient(45deg, #16a34a, #059669);
+            color: white;
+        }
+
+        .button-secondary {
+            background: linear-gradient(45deg, #9333ea, #ec4899);
+            color: white;
+        }
+
+        .button-outline {
+            background: white;
+            border: 2px solid #d1d5db;
+            color: #374151;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .controls-info {
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .settings {
+            display: none;
+        }
+
+        .settings.show {
+            display: block;
+        }
+
+        .setting-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .setting-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e5e7eb;
+            outline: none;
+            margin-bottom: 0.5rem;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #9333ea;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #9333ea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .color-option {
+            width: 100%;
+            height: 2rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-option.selected {
+            border-color: #374151;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            max-height: 8rem;
+            overflow-y: auto;
+        }
+
+        .pattern-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 3rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            font-size: 0.75rem;
+            text-align: center;
+        }
+
+        .pattern-option.selected {
+            border-color: #374151;
+            background: #f3f4f6;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .pattern-preview {
+            font-size: 1.125rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .warning {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .modal-score {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .new-high-score {
+            color: #eab308;
+            animation: bounce 1s infinite;
+        }
+
+        .regular-score {
+            color: #9333ea;
+        }
+
+        .modal-quote {
+            background: linear-gradient(45deg, #dbeafe, #f3e8ff);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+            color: #374151;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40%, 43% {
+                transform: translateY(-10px);
+            }
+            70% {
+                transform: translateY(-5px);
+            }
+            90% {
+                transform: translateY(-2px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">
+            <h1>Snake Game</h1>
+            <p>Use arrow keys to control the snake</p>
+        </div>
+
+        <div class="game-layout">
+            <div class="card game-board">
+                <div class="board-container">
+                    <canvas id="gameCanvas" class="board" width="400" height="400"></canvas>
+                    <div id="boardOverlay" class="board-overlay">
+                        <div>
+                            <h3>Ready to Play?</h3>
+                            <p>Click "Start Game" to begin!</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 1rem; color: #6b7280; font-size: 0.875rem;">
+                    <p id="gameStatus">Get ready for an amazing game!</p>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card stats">
+                    <h3>Game Stats</h3>
+                    <div class="stat-row">
+                        <span class="stat-label">Score:</span>
+                        <span class="stat-value score" id="scoreDisplay">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">High Score:</span>
+                        <span class="stat-value high-score" id="highScoreDisplay">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Length:</span>
+                        <span class="stat-value length" id="lengthDisplay">1</span>
+                    </div>
+                </div>
+
+                <div class="card controls">
+                    <h3>Controls</h3>
+                    <button id="gameButton" class="button button-primary">Start Game</button>
+                    <button id="settingsButton" class="button button-outline">Show Settings</button>
+                    <div class="controls-info">
+                        <p>↑↓←→ Move snake</p>
+                        <p>Space: Restart when game over</p>
+                    </div>
+                </div>
+
+                <div class="card settings" id="settingsPanel">
+                    <h3>Game Settings</h3>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Game Speed: <span id="speedValue">150</span>ms</label>
+                        <input type="range" id="speedSlider" class="slider" min="50" max="300" step="10" value="150">
+                        <div class="slider-labels">
+                            <span>Fast</span>
+                            <span>Slow</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Board Size: <span id="sizeValue">20</span>x<span id="sizeValue2">20</span></label>
+                        <input type="range" id="sizeSlider" class="slider" min="15" max="25" step="1" value="20">
+                        <div class="slider-labels">
+                            <span>Small</span>
+                            <span>Large</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Board Pattern</label>
+                        <div class="pattern-grid" id="patternGrid">
+                            <div class="pattern-option selected" data-pattern="none">
+                                <div class="pattern-preview">🚫</div>
+                                <div>None</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="girly-bows">
+                                <div class="pattern-preview">🎀</div>
+                                <div>Girly Bows</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="nature">
+                                <div class="pattern-preview">🌿</div>
+                                <div>Nature</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="cars">
+                                <div class="pattern-preview">🚗</div>
+                                <div>Car Theme</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="dark-forest">
+                                <div class="pattern-preview">🌲</div>
+                                <div>Dark Forest</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="blue-sky">
+                                <div class="pattern-preview">☁️</div>
+                                <div>Blue Sky</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="hearts">
+                                <div class="pattern-preview">💖</div>
+                                <div>Hearts</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="stars">
+                                <div class="pattern-preview">⭐</div>
+                                <div>Stars</div>
+                            </div>
+                            <div class="pattern-option" data-pattern="flowers">
+                                <div class="pattern-preview">🌸</div>
+                                <div>Flowers</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Snake Color</label>
+                        <div class="color-grid" id="snakeColorGrid">
+                            <div class="color-option selected" style="background-color: #22c55e;" data-color="#22c55e" title="Classic Green"></div>
+                            <div class="color-option" style="background-color: #3b82f6;" data-color="#3b82f6" title="Electric Blue"></div>
+                            <div class="color-option" style="background-color: #8b5cf6;" data-color="#8b5cf6" title="Purple"></div>
+                            <div class="color-option" style="background-color: #f97316;" data-color="#f97316" title="Orange"></div>
+                            <div class="color-option" style="background-color: #ec4899;" data-color="#ec4899" title="Pink"></div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Food Color</label>
+                        <div class="color-grid" id="foodColorGrid">
+                            <div class="color-option selected" style="background-color: #ef4444;" data-color="#ef4444" title="Classic Red"></div>
+                            <div class="color-option" style="background-color: #f97316;" data-color="#f97316" title="Orange"></div>
+                            <div class="color-option" style="background-color: #eab308;" data-color="#eab308" title="Yellow"></div>
+                            <div class="color-option" style="background-color: #d946ef;" data-color="#d946ef" title="Magenta"></div>
+                            <div class="color-option" style="background-color: #06b6d4;" data-color="#06b6d4" title="Cyan"></div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Background Color</label>
+                        <div class="color-grid" id="backgroundColorGrid">
+                            <div class="color-option selected" style="background-color: #fce7f3;" data-color="#fce7f3" title="Soft Pink"></div>
+                            <div class="color-option" style="background-color: #f3e8ff;" data-color="#f3e8ff" title="Light Purple"></div>
+                            <div class="color-option" style="background-color: #dbeafe;" data-color="#dbeafe" title="Soft Blue"></div>
+                            <div class="color-option" style="background-color: #dcfce7;" data-color="#dcfce7" title="Light Green"></div>
+                            <div class="color-option" style="background-color: #fed7aa;" data-color="#fed7aa" title="Peach"></div>
+                        </div>
+                    </div>
+
+                    <div id="gameStartedWarning" class="warning" style="display: none;">
+                        ⚠️ Settings changes will apply to your next game
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameOverModal" class="modal hidden">
+        <div class="modal-content">
+            <div id="modalTitle" class="modal-title">Game Over!</div>
+            <div id="modalScore" class="modal-score regular-score">0</div>
+            <div id="modalHighScore" style="color: #6b7280; margin-bottom: 1rem;"></div>
+            <div class="modal-quote">
+                <p id="motivationalQuote">"Every master was once a beginner. Keep playing!"</p>
+            </div>
+            <button id="restartButton" class="button button-primary">Play Again</button>
+            <p style="font-size: 0.875rem; color: #6b7280; margin-top: 1rem;">
+                Press Space key or click the button to restart
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let snake = [{x: 10, y: 10}];
+        let food = {x: 15, y: 15};
+        let direction = {x: 0, y: 0};
+        let gameStarted = false;
+        let gameOver = false;
+        let score = 0;
+        let highScore = 0;
+        let gameInterval;
+
+        // Game settings
+        let settings = {
+            speed: 150,
+            boardSize: 20,
+            snakeColor: '#22c55e',
+            foodColor: '#ef4444',
+            backgroundColor: '#fce7f3',
+            pattern: 'none'
+        };
+
+        // DOM elements
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const highScoreDisplay = document.getElementById('highScoreDisplay');
+        const lengthDisplay = document.getElementById('lengthDisplay');
+        const gameButton = document.getElementById('gameButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const boardOverlay = document.getElementById('boardOverlay');
+        const gameStatus = document.getElementById('gameStatus');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const gameStartedWarning = document.getElementById('gameStartedWarning');
+
+        // Motivational quotes
+        const motivationalQuotes = [
+            "Every master was once a beginner. Keep playing!",
+            "Success is not final, failure is not fatal. Try again!",
+            "The only way to do great work is to love what you do.",
+            "Don't watch the clock; do what it does. Keep going!",
+            "Champions keep playing until they get it right.",
+            "Your only limit is your mind. Play another round!",
+            "Great things never come from comfort zones.",
+            "The comeback is always stronger than the setback!"
+        ];
+
+        // Initialize game
+        function init() {
+            loadHighScore();
+            setupEventListeners();
+            setupSettings();
+            updateDisplay();
+            applyPattern();
+        }
+
+        // Load high score from localStorage
+        function loadHighScore() {
+            const saved = localStorage.getItem('snakeHighScore');
+            if (saved) {
+                highScore = parseInt(saved);
+                highScoreDisplay.textContent = highScore;
+            }
+        }
+
+        // Save high score to localStorage
+        function saveHighScore() {
+            localStorage.setItem('snakeHighScore', highScore.toString());
+        }
+
+        // Generate random food position
+        function generateFood() {
+            let newFood;
+            do {
+                newFood = {
+                    x: Math.floor(Math.random() * settings.boardSize),
+                    y: Math.floor(Math.random() * settings.boardSize)
+                };
+            } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+            return newFood;
+        }
+
+        // Reset game state
+        function resetGame() {
+            const initialSnake = [{x: 10, y: 10}];
+            snake = initialSnake;
+            food = generateFood();
+            direction = {x: 0, y: 0};
+            gameStarted = false;
+            gameOver = false;
+            score = 0;
+            updateDisplay();
+        }
+
+        // Start game
+        function startGame() {
+            resetGame();
+            gameStarted = true;
+            boardOverlay.classList.add('hidden');
+            gameStatus.textContent = 'Use arrow keys to move the snake';
+            gameButton.textContent = 'Game in Progress...';
+            gameButton.disabled = true;
+            gameStartedWarning.style.display = 'block';
+            gameInterval = setInterval(gameLoop, settings.speed);
+        }
+
+        // Check collision
+        function checkCollision(head) {
+            // Wall collision
+            if (head.x < 0 || head.x >= settings.boardSize || head.y < 0 || head.y >= settings.boardSize) {
+                return true;
+            }
+            // Self collision
+            return snake.some(segment => segment.x === head.x && segment.y === head.y);
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameStarted || gameOver || (direction.x === 0 && direction.y === 0)) return;
+
+            const head = {
+                x: snake[0].x + direction.x,
+                y: snake[0].y + direction.y
+            };
+
+            if (checkCollision(head)) {
+                endGame();
+                return;
+            }
+
+            snake.unshift(head);
+
+            // Check if food is eaten
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                if (score > highScore) {
+                    highScore = score;
+                    saveHighScore();
+                }
+                food = generateFood();
+            } else {
+                snake.pop();
+            }
+
+            updateDisplay();
+            draw();
+        }
+
+        // End game
+        function endGame() {
+            gameOver = true;
+            gameStarted = false;
+            clearInterval(gameInterval);
+            
+            boardOverlay.classList.remove('hidden');
+            boardOverlay.classList.add('game-over-overlay');
+            boardOverlay.innerHTML = `
+                <div>
+                    <h3>Game Over!</h3>
+                    <p>Press Space or "Play Again" to restart</p>
+                </div>
+            `;
+            
+            gameStatus.textContent = 'Get ready for an amazing game!';
+            gameButton.textContent = 'Play Again';
+            gameButton.disabled = false;
+            gameButton.className = 'button button-secondary';
+            gameStartedWarning.style.display = 'none';
+
+            showGameOverModal();
+        }
+
+        // Show game over modal
+        function showGameOverModal() {
+            const isNewHighScore = score === highScore && score > 0;
+            const modalTitle = document.getElementById('modalTitle');
+            const modalScore = document.getElementById('modalScore');
+            const modalHighScore = document.getElementById('modalHighScore');
+            const motivationalQuote = document.getElementById('motivationalQuote');
+
+            if (isNewHighScore) {
+                modalTitle.textContent = '🎉 NEW HIGH SCORE! 🎉';
+                modalScore.textContent = score;
+                modalScore.className = 'modal-score new-high-score';
+                modalHighScore.textContent = '';
+            } else {
+                modalTitle.textContent = 'Game Over!';
+                modalScore.textContent = score;
+                modalScore.className = 'modal-score regular-score';
+                modalHighScore.textContent = `High Score: ${highScore}`;
+            }
+
+            const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+            motivationalQuote.textContent = `"${randomQuote}"`;
+
+            gameOverModal.classList.remove('hidden');
+        }
+
+        // Hide game over modal
+        function hideGameOverModal() {
+            gameOverModal.classList.add('hidden');
+        }
+
+        // Update display
+        function updateDisplay() {
+            scoreDisplay.textContent = score;
+            highScoreDisplay.textContent = highScore;
+            lengthDisplay.textContent = snake.length;
+        }
+
+        // Get pattern style
+        function getPatternStyle(pattern) {
+            const baseStyle = {
+                backgroundSize: '20px 20px',
+                backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+            };
+
+            switch (pattern) {
+                case 'girly-bows':
+                    return {
+                        ...baseStyle,
+                        backgroundImage: `
+                            radial-gradient(circle at 5px 5px, #ff69b4 2px, transparent 2px),
+                            radial-gradient(circle at 15px 15px, #ffb6c1 1.5px, transparent 1.5px),
+                            linear-gradient(45deg, rgba(255,182,193,0.3) 25%, transparent 25%),
+                            linear-gradient(-45deg, rgba(255,105,180,0.2) 25%, transparent 25%)
+                        `
+                    };
+                case 'nature':
+                    return {
+                        ...baseStyle,
+                        backgroundImage: `
+                            radial-gradient(circle at 3px 3px, #228b22 1px, transparent 1px),
+                            radial-gradient(circle at 17px 17px, #32cd32 1.5px, transparent 1.5px),
+                            linear-gradient(45deg, rgba(34,139,34,0.1) 25%, transparent 25%),
+                            linear-gradient(-45deg, rgba(50,205,50,0.1) 25%, transparent 25%)
+                        `
+                    };
+                case 'cars':
+                    return {
+                        backgroundImage: `
+                            linear-gradient(0deg, #333 1px, transparent 1px),
+                            linear-gradient(90deg, #666 1px, transparent 1px),
+                            radial-gradient(circle at 10px 10px, #ff4500 1px, transparent 1px)
+                        `,
+                        backgroundSize: '20px 20px, 20px 20px, 40px 40px'
+                    };
+                case 'dark-forest':
+                    return {
+                        ...baseStyle,
+                        backgroundImage: `
+                            radial-gradient(circle at 7px 7px, #2d5016 2px, transparent 2px),
+                            radial-gradient(circle at 13px 13px, #1a3009 1px, transparent 1px),
+                            linear-gradient(45deg, rgba(45,80,22,0.2) 25%, transparent 25%),
+                            linear-gradient(-45deg, rgba(26,48,9,0.3) 25%, transparent 25%)
+                        `
+                    };
+                case 'blue-sky':
+                    return {
+                        ...baseStyle,
+                        backgroundImage: `
+                            radial-gradient(ellipse at 6px 6px, #87ceeb 2px, transparent 2px),
+                            radial-gradient(ellipse at 14px 14px, #b0e0e6 3px, transparent 3px),
+                            linear-gradient(45deg, rgba(135,206,235,0.1) 25%, transparent 25%),
+                            linear-gradient(-45deg, rgba(176,224,230,0.1) 25%, transparent 25%)
+                        `
+                    };
+                case 'hearts':
+                    return {
+                        ...baseStyle,
+                        backgroundImage: `
+                            radial-gradient(circle at 5px 5px, #ff1493 1.5px, transparent 1.5px),
+                            radial-gradient(circle at 15px 15px, #ff69b4 1px, transparent 1px),
+                            linear-gradient(45deg, rgba(255,20,147,0.1) 25%, transparent 25%)
+                        `
+                    };
+                case 'stars':
+                    return {
+                        ...baseStyle,
+                        backgroundImage: `
+                            radial-gradient(circle at 4px 4px, #ffd700 1px, transparent 1px),
+                            radial-gradient(circle at 16px 16px, #ffff00 1.5px, transparent 1.5px),
+                            radial-gradient(circle at 10px 2px, #ffffff 0.5px, transparent 0.5px),
+                            linear-gradient(45deg, rgba(255,215,0,0.1) 25%, transparent 25%)
+                        `
+                    };
+                case 'flowers':
+                    return {
+                        ...baseStyle,
+                        backgroundImage: `
+                            radial-gradient(circle at 6px 6px, #ff69b4 2px, transparent 2px),
+                            radial-gradient(circle at 14px 14px, #ffb6c1 1.5px, transparent 1.5px),
+                            radial-gradient(circle at 2px 18px, #ffc0cb 1px, transparent 1px),
+                            linear-gradient(45deg, rgba(255,105,180,0.1) 25%, transparent 25%)
+                        `
+                    };
+                default:
+                    return {
+                        backgroundImage: `
+                            linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%), 
+                            linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%), 
+                            linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.1) 75%), 
+                            linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.1) 75%)
+                        `,
+                        backgroundSize: '20px 20px',
+                        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                    };
+            }
+        }
+
+        // Apply pattern to canvas
+        function applyPattern() {
+            const patternStyle = getPatternStyle(settings.pattern);
+            canvas.style.backgroundColor = settings.backgroundColor;
+            canvas.style.backgroundImage = patternStyle.backgroundImage;
+            canvas.style.backgroundSize = patternStyle.backgroundSize;
+            canvas.style.backgroundPosition = patternStyle.backgroundPosition;
+        }
+
+        // Draw game
+        function draw() {
+            const cellSize = 20;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw snake
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = settings.snakeColor;
+                ctx.fillRect(segment.x * cellSize, segment.y * cellSize, cellSize - 1, cellSize - 1);
+                
+                if (index === 0) {
+                    // Snake head
+                    ctx.shadowColor = settings.snakeColor + '40';
+                    ctx.shadowBlur = 10;
+                    ctx.fillRect(segment.x * cellSize, segment.y * cellSize, cellSize - 1, cellSize - 1);
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            // Draw food
+            ctx.fillStyle = settings.foodColor;
+            ctx.shadowColor = settings.foodColor + '60';
+            ctx.shadowBlur = 15;
+            ctx.fillRect(food.x * cellSize, food.y * cellSize, cellSize - 1, cellSize - 1);
+            ctx.shadowBlur = 0;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Game controls
+            gameButton.addEventListener('click', () => {
+                if (!gameStarted || gameOver) {
+                    hideGameOverModal();
+                    boardOverlay.classList.remove('game-over-overlay');
+                    gameButton.className = 'button button-primary';
+                    startGame();
+                }
+            });
+
+            // Settings toggle
+            settingsButton.addEventListener('click', () => {
+                const isVisible = settingsPanel.classList.contains('show');
+                settingsPanel.classList.toggle('show');
+                settingsButton.textContent = isVisible ? 'Show Settings' : 'Hide Settings';
+            });
+
+            // Modal restart button
+            document.getElementById('restartButton').addEventListener('click', () => {
+                hideGameOverModal();
+                boardOverlay.classList.remove('game-over-overlay');
+                gameButton.className = 'button button-primary';
+                startGame();
+            });
+
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (!gameStarted || gameOver) {
+                    if (e.key === ' ') {
+                        e.preventDefault();
+                        if (gameOver) {
+                            hideGameOverModal();
+                            boardOverlay.classList.remove('game-over-overlay');
+                            gameButton.className = 'button button-primary';
+                            startGame();
+                        }
+                    }
+                    return;
+                }
+
+                switch (e.key) {
+                    case 'ArrowUp':
+                        if (direction.y !== 1) direction = {x: 0, y: -1};
+                        break;
+                    case 'ArrowDown':
+                        if (direction.y !== -1) direction = {x: 0, y: 1};
+                        break;
+                    case 'ArrowLeft':
+                        if (direction.x !== 1) direction = {x: -1, y: 0};
+                        break;
+                    case 'ArrowRight':
+                        if (direction.x !== -1) direction = {x: 1, y: 0};
+                        break;
+                    case ' ':
+                        e.preventDefault();
+                        if (gameOver) {
+                            hideGameOverModal();
+                            boardOverlay.classList.remove('game-over-overlay');
+                            gameButton.className = 'button button-primary';
+                            startGame();
+                        }
+                        break;
+                }
+            });
+        }
+
+        // Setup settings controls
+        function setupSettings() {
+            // Speed slider
+            const speedSlider = document.getElementById('speedSlider');
+            const speedValue = document.getElementById('speedValue');
+            speedSlider.addEventListener('input', (e) => {
+                settings.speed = parseInt(e.target.value);
+                speedValue.textContent = settings.speed;
+                if (gameStarted && !gameOver) {
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, settings.speed);
+                }
+            });
+
+            // Size slider
+            const sizeSlider = document.getElementById('sizeSlider');
+            const sizeValue = document.getElementById('sizeValue');
+            const sizeValue2 = document.getElementById('sizeValue2');
+            sizeSlider.addEventListener('input', (e) => {
+                settings.boardSize = parseInt(e.target.value);
+                sizeValue.textContent = settings.boardSize;
+                sizeValue2.textContent = settings.boardSize;
+                
+                // Update canvas size
+                const newSize = settings.boardSize * 20;
+                canvas.width = newSize;
+                canvas.height = newSize;
+                applyPattern();
+                if (gameStarted) draw();
+            });
+
+            // Pattern selection
+            const patternGrid = document.getElementById('patternGrid');
+            patternGrid.addEventListener('click', (e) => {
+                const option = e.target.closest('.pattern-option');
+                if (option) {
+                    document.querySelectorAll('.pattern-option').forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    settings.pattern = option.dataset.pattern;
+                    applyPattern();
+                    if (gameStarted) draw();
+                }
+            });
+
+            // Color selections
+            setupColorSelection('snakeColorGrid', 'snakeColor');
+            setupColorSelection('foodColorGrid', 'foodColor');
+            setupColorSelection('backgroundColorGrid', 'backgroundColor');
+        }
+
+        // Setup color selection
+        function setupColorSelection(gridId, settingKey) {
+            const grid = document.getElementById(gridId);
+            grid.addEventListener('click', (e) => {
+                const option = e.target.closest('.color-option');
+                if (option) {
+                    grid.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    settings[settingKey] = option.dataset.color;
+                    
+                    if (settingKey === 'backgroundColor') {
+                        applyPattern();
+                    }
+                    
+                    if (gameStarted) draw();
+                }
+            });
+        }
+
+        // Initialize the game when page loads
+        init();
+    </script>
+</body>
+</html>
